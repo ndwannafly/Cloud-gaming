@@ -1,0 +1,36 @@
+.provider-choice {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  &__title {
+    text-align: center;
+    color: #e50914;
+    margin-bottom: 3rem;
+  }
+
+  &__close {
+    position: absolute;
+    right: 2rem;
+    top: 2rem;
+
+    cursor: pointer;
+    color: #b81d24;
+    font-family: inherit;
+    font-size: 1.4rem;
+    border: none;
+    background-color: transparent;
+
+    &:hover {
+      color: #e50914;
+    }
+  }
+
+  &__provider-list {
+    max-height: 70%;
+    width: 50%;
+  }
+}

@@ -3,7 +3,7 @@ version: "3.8"
 services:
   appvm:
     build:
-      context: ./appvm
+      context: ../appvm
       dockerfile: Dockerfile
       args:
         APP_NAME: ${APP_NAME}

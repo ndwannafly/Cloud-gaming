@@ -2,76 +2,62 @@ package app
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"log"
 	"net/http"
-
+    "fmt"
+    // "io/ioutil"
+    
 	"coordinator/app/api/response"
-	"coordinator/utils"
-
-	"gopkg.in/yaml.v3"
+    "gorm.io/gorm"
 )
 
 type App struct {
-	ID        string   `yaml:"id" json:"id"`
-	Name      string   `yaml:"name" json:"name"`
-	Type      string   `yaml:"type" json:"type"`
-	PosterURL string   `yaml:"poster_url" json:"posterURL"`
-	Device    []string `yaml:"device" json:"device"`
-}
-
-var appList []*App
-
-func getAppList() ([]*App, error) {
-	ymlFile, err := ioutil.ReadFile("app/api/app/apps.yml")
-	if err != nil {
-		return nil, err
-	}
-
-	var apps []*App
-	if err = yaml.Unmarshal(ymlFile, &apps); err != nil {
-		return nil, err
-	}
-
-	return apps, nil
-}
-
-func init() {
-	var err error
-
-	appList, err = getAppList()
-	if err != nil {
-		log.Fatalln("Couldn't read app list", err)
-	}
+    Id          string  `json:"id" gorm:"column:id;type:VARCHAR(255)"`
+    Name        string  `json:"name" gorm:"column:name;type:VARCHAR(255)"`
+    Type        string  `json:"type" gorm:"column:type;type:VARCHAR(50)"`
+    PosterUrl   string  `json:"posterURL" gorm:"column:poster_url;type:VARCHAR(255)"`
+    Device      string  `json:"device" gorm:"column:device;type:varchar(255)"`
 }
 
 type GetAppListResponse struct {
 	Apps []*App `json:"apps"`
 }
 
-func GetAppList(w http.ResponseWriter, r *http.Request) {
+func GetAppList(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
+    var appList []*App
+    
+    result := db.
+        Model(&App{}).
+        Find(&appList)
+    
+    if result.Error != nil {
+        fmt.Println("Can't get app list from DB: %s", result.Error);
+        return
+    
+    }
+
 	resp := response.Response{
 		Data: GetAppListResponse{Apps: appList},
 	}
-
+	
 	deviceParams, ok := r.URL.Query()["device"]
 	if ok && len(deviceParams[0]) > 0 {
 		device := deviceParams[0]
 
 		var filteredAppList []*App
 		for _, app := range appList {
-			if utils.InStringSlice(app.Device, device) {
+			if app.Device == device {
 				filteredAppList = append(filteredAppList, app)
 			}
 		}
 
 		resp = response.Response{
 			Data: GetAppListResponse{Apps: filteredAppList},
-		}
+		}   
 	}
 
 	jsonResp, err := json.Marshal(resp)
-	if err != nil {
+    if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Println("Couldn't marshall get app list response to JSON", err)
 		return

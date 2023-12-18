@@ -1,12 +1,16 @@
 package provider
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
 	"coordinator/app/api/response"
 	"coordinator/app/client"
+
+	"github.com/redis/go-redis/v9"
 )
 
 type Provider struct {
@@ -18,13 +22,14 @@ type Provider struct {
 	MemSize    float64 `json:"memSize"`
 	CpuPercent float64 `json:"cpuPercent"`
 	MemPercent float64 `json:"memPercent"`
+    ActivePlayer int64    `json:"activePlayer"`
 }
 
 type GetProviderListResp struct {
 	Providers []*Provider `json:"providers"`
 }
 
-func GetProviderList(hub *client.Hub, w http.ResponseWriter, r *http.Request) {
+func GetProviderList(ctx context.Context, redisClient *redis.Client, hub *client.Hub, w http.ResponseWriter, r *http.Request) {
 	hasOwnerIDParam := r.URL.Query().Has("owner")
 	ownerID := r.URL.Query().Get("owner")
 
@@ -32,6 +37,13 @@ func GetProviderList(hub *client.Hub, w http.ResponseWriter, r *http.Request) {
 
 	for _, p := range hub.GetProviders() {
 		if !hasOwnerIDParam || p.Provider.OwnerID == ownerID {
+            activePlayer, err := redisClient.Get(ctx, p.Provider.OwnerID).Int64()
+            if err != nil {
+                fmt.Println("err:", err)
+                fmt.Printf("Cannot get number of active player on server %s, set to 0 as default\n", ownerID)
+                activePlayer = 0;
+            }
+        
 			providers = append(providers, &Provider{
 				ID:         p.ID,
 				HostName:   p.Provider.HostName,
@@ -41,6 +53,7 @@ func GetProviderList(hub *client.Hub, w http.ResponseWriter, r *http.Request) {
 				MemSize:    p.Provider.MemSize,
 				CpuPercent: p.Provider.CpuPercent,
 				MemPercent: p.Provider.MemPercent,
+                ActivePlayer: activePlayer,
 			})
 		}
 	}

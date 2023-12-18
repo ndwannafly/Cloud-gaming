@@ -19,6 +19,8 @@ import (
 )
 
 type Session struct {
+    ownerID     string
+    appID       string
 	playerID  string
 	timeStart time.Time
 	hub       *Hub
@@ -30,8 +32,11 @@ type Session struct {
 	wsConn *ws.Connection
 }
 
-func NewSession(playerID string, wsConn *ws.Connection, hub *Hub) *Session {
-	s := Session{
+func NewSession(ownerID, appID string, playerID string, wsConn *ws.Connection, hub *Hub) *Session {
+	// fmt.Println("new session ", ownerID)
+    s := Session{
+        ownerID:    ownerID,
+        appID:     appID,
 		playerID:  playerID,
 		hub:       hub,
 		timeStart: time.Now(),
@@ -39,7 +44,7 @@ func NewSession(playerID string, wsConn *ws.Connection, hub *Hub) *Session {
 		outBuf:    make(chan interface{}),
 		wsConn:    wsConn,
 	}
-
+    // fmt.Println("s.appID: ", s.ownerID)
 	go s.readMsg()
 	go s.writeMsg()
 
@@ -56,7 +61,7 @@ func (s *Session) close() {
 	close(s.inpBuf)
 	close(s.outBuf)
 
-	s.hub.RemoveSession(s.playerID)
+	s.hub.RemoveSession(s.playerID, s.ownerID)
 }
 
 func (s *Session) ReceiveMsg(msg *ws.Message) {

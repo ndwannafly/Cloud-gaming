@@ -29,6 +29,8 @@ export default function ProviderListItem({ provider }) {
         <span>CPU: {Math.ceil(provider.cpuPercent)}%</span>
         <br />
         <span>Mem: {Math.ceil(provider.memPercent)}%</span>
+        <br />
+        <span>Active Players: {provider.activePlayer} </span>
       </div>
     </div>
   );

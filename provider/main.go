@@ -126,6 +126,12 @@ func updateStats(conn *ws.Connection, interval time.Duration) {
 	}
 }
 
+type SessionData struct {
+    appID   string  `json:"appID"`
+    device  string  `json:"device"`
+}
+
+
 var ownerID = flag.String("owner", "", "ID of this computer's owner")
 
 func main() {
@@ -156,10 +162,16 @@ func main() {
 
 		var s *session.Session
 		if msg.Type == constants.JoinAcceptedMessage {
+            *ownerID= msg.Data
 			log.Printf("Owner's ID: %s", msg.Data)
 			continue
 		} else if msg.Type == constants.StartMessage {
-			s = session.NewSession(msg.SenderID, conn, hub)
+            var data *SessionData
+            if err := json.Unmarshal([]byte(msg.Data), &data); err != nil {
+                log.Printf("[%s] Incorrect start message format: %s\n", msg.SenderID, err)
+            }
+            *data = SessionData{appID: "tarzan", device: "pc"} // Assign the updated value to data
+            s = session.NewSession(*ownerID, data.appID, msg.SenderID, conn, hub)
 			hub.AddSession(s)
 		} else {
 			s = hub.GetSession(msg.SenderID)
